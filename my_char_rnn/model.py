@@ -33,10 +33,26 @@ class RnnModel(object):
         state = self.init_state = cell.zero_state(batch_size=param.batch_size, dtype=tf.float32)
         logits = []  # .shape = (seq_length, batch_size, vocab_size)
 
+        self.sched_threshold = tf.placeholder(tf.float32, ())
         with tf.variable_scope(self.scope) as the_scope:
+            probs = None
             for i in range(param.seq_length):
+                if i == 0:
+                    embedded_input = embedded[i]
+                else:
+                    random_value = tf.random_uniform(())
+                    input_chars = tf.argmax(probs, 1)
+                    embedded_input = tf.nn.embedding_lookup(self.embedding, input_chars)
+                    embedded_input = tf.cond(
+                        random_value>self.sched_threshold,
+                        lambda: embedded_input,
+                        lambda: embedded[i],
+                    )
                 output, state = cell(embedded[i], state)  # output.shape = (batch_size, rnn_size)
-                logits.append(tf.matmul(output, self.softmax_w) + self.softmax_b)
+                logit = tf.matmul(output, self.softmax_w) + self.softmax_b
+                logits.append(logit)
+                probs = tf.nn.softmax(logit)
+
                 the_scope.reuse_variables()
 
         self.final_state = state
@@ -50,33 +66,51 @@ class RnnModel(object):
         # sample model
 
         self.sample_input_char = tf.placeholder(tf.int32)  # [0, vocab_size)
+        self.sample_target_char = tf.placeholder(tf.int32)  # [0, vocab_size)
         embedded = tf.nn.embedding_lookup(self.embedding, tf.reshape(self.sample_input_char, (1,)))
         self.sample_init_state = cell.zero_state(batch_size=1, dtype=tf.float32)
         with tf.variable_scope(self.scope, reuse=True):
             output, self.sample_final_state = cell(embedded, self.sample_init_state)
             logits = tf.matmul(output, self.softmax_w) + self.softmax_b
             self.sample_output_probs = tf.nn.softmax(logits[0])
+            self.sample_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                labels=tf.reshape(self.sample_target_char, shape=(1,)),
+                logits=logits
+            )
 
     @staticmethod
     def _state_feed(placeholder, value):
         return {p: v for placeholder_i, value_i in zip(placeholder, value) for p, v in zip(placeholder_i, value_i)}
 
-    def train(self, sess, input_data, target_data, learning_rate, init_state=None):
-        feed = {self.input_data: input_data, self.target_data: target_data, self.learning_rate: learning_rate}
+    def train(self, sess, input_data, target_data, learning_rate, init_state, sched_threshold):
+        feed = {
+            self.input_data: input_data,
+            self.target_data: target_data,
+            self.learning_rate: learning_rate,
+            self.sched_threshold: sched_threshold,
+        }
         if init_state:  # continued training, start from last state
             feed.update(RnnModel._state_feed(self.init_state, init_state))
         loss, state, _ = sess.run([self.cost, self.final_state, self.train_op], feed_dict=feed)
         return loss, state
 
-    def sample(self, sess, initial_text, source, length):
-        state = probs = None
+    def test(self, sess, input_data, target_data):
+        last_state = None
+        loss = 0.0
+        for input_data_i, target_data_i in zip(input_data, target_data):
+            feed = {self.sample_input_char: input_data_i, self.sample_target_char: target_data_i}
+            loss += sess.run(self.sample_loss, feed)
+        loss /= len(input_data)
+        return loss
+
+    def sample(self, sess, initial_text, data_loader, length):
+        last_state = probs = None
         result = []
         for i in range(length):
-            c = initial_text[i] if i < len(initial_text) else np.random.choice(source.vocab, p=probs)
+            c = initial_text[i] if i < len(initial_text) else np.random.choice(data_loader.vocab, p=probs)
             result.append(c)
-            feed = {self.sample_input_char: source.r_vocab[c]}
-            if state:
-                feed.update(RnnModel._state_feed(self.sample_init_state, state))
-            probs, state = sess.run([self.sample_output_probs, self.sample_final_state], feed)
+            feed = {self.sample_input_char: data_loader.r_vocab[c]}
+            if last_state:
+                feed.update(RnnModel._state_feed(self.sample_init_state, last_state))
+            probs, last_state = sess.run([self.sample_output_probs, self.sample_final_state], feed)
         return ''.join(result)
-
