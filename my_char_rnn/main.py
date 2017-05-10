@@ -1,8 +1,8 @@
-import sys
 import select
+import sys
+
 import numpy as np
 import tensorflow as tf
-
 from tensorflow.contrib.rnn import BasicLSTMCell, MultiRNNCell
 
 if sys.version_info.major != 2:
