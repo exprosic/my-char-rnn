@@ -4,7 +4,9 @@ from collections import namedtuple
 ModelParameter = namedtuple(
     'ModelParameters',
     [
-        'input_file_name',
+        'data_name',
+        'input_file_urls',
+        'resource_path',
         'saved_session_file_name',
 
         'batch_size',  # number of sequences in each batch
@@ -22,7 +24,11 @@ ModelParameter = namedtuple(
 
 # This recommended parameter is supposed to be copied rather than be imported.
 _recommended_parameter = ModelParameter(
-    input_file_name='resource/input.txt',
+    data_name = 'shakespeare_5m',
+    input_file_urls = {
+        'shakespeare_5m': 'https://ocw.mit.edu/ans7870/6/6.006/s08/lecturenotes/files/t8.shakespeare.txt',
+    },
+    resource_path = 'resource',
     saved_session_file_name='saved/model.ckpt',
 
     batch_size=50,

@@ -1,6 +1,33 @@
+import os
+import urllib2
+
 import numpy as np
 
 from my_char_rnn.config import ModelParameter
+
+
+def cache_data(param):
+    assert isinstance(param, ModelParameter)
+
+    file_path = os.path.join(param.resource_path, param.data_name)
+    try:
+        return open(file_path, 'r')
+    except IOError:
+        pass
+
+    try:
+        url = param.input_file_urls[param.data_name]
+    except Exception as e:
+        raise ValueError('No url for {}'.format(param.data_name))
+
+    print('Downloading {} ...'.format(param.data_name))
+    tmp_file_path = file_path+'__'
+    with open(tmp_file_path, 'wb') as f:
+        f.write(urllib2.urlopen(url).read())
+    print('{} downloaded.'.format(param.data_name))
+
+    os.rename(tmp_file_path, file_path)
+    return open(file_path, 'r')
 
 
 class DataLoader(object):
@@ -10,7 +37,7 @@ class DataLoader(object):
 
         # Load the full text, calculate the vocabulary and the parameters.
 
-        self._full_text = ''.join(open(param.input_file_name).readlines())  # full text in a str
+        self._full_text = ''.join(cache_data(param).readlines())  # full text in a str
 
         test_text_length = min(1000, len(self._full_text) // 4)
         self._training_text = self._full_text[:-test_text_length]
