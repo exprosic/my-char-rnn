@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import tensorflow as tf
 
 from my_char_rnn.config import _recommended_parameter as param  # just for convenience
@@ -13,7 +14,10 @@ def train():
     saver = tf.train.Saver()
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        try:
+            saver.restore(sess, param.saved_session_file_name)
+        except:
+            sess.run(tf.global_variables_initializer())
 
         last_state = None
         n_epoch = 50
@@ -39,6 +43,7 @@ def train():
                         #global_step=i_epoch*data_loader.n_batches+i_batch,
                     )
                     generate(sess)
+                    plot_weights(last_state)
 
                     # test_input, test_target = data_loader.get_test_data()
                     # test_loss = model.test(sess, test_input, test_target)
@@ -61,7 +66,33 @@ def generate(sess):
     else:
         do_generate(sess, initial_text='what are you doing')
 
+
 def do_generate(sess, initial_text):
     generate_text = model.sample(sess, initial_text, data_loader, length=200)
     print('Generated text:')
     print(generate_text)
+
+plt.ion()
+
+
+def plot_weights(state):
+    plt.clf()
+
+    plt.subplot(2, 2, 1)
+    plt.title('0c')
+    plt.hist(state[0].c.reshape(-1), bins=10, range=(-100, 100))
+
+    plt.subplot(2, 2, 2)
+    plt.title('0h')
+    plt.hist(state[0].h.reshape(-1), bins=10)
+
+    plt.subplot(2, 2, 3)
+    plt.title('1c')
+    plt.hist(state[1].c.reshape(-1), bins=10, range=(-100, 100))
+
+    plt.subplot(2, 2, 4)
+    plt.title('1h')
+    plt.hist(state[1].h.reshape(-1), bins=10)
+
+    plt.draw()
+    plt.pause(0.001)

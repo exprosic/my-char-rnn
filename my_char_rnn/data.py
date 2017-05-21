@@ -77,4 +77,6 @@ class DataLoader(object):
         encoded = self._encode(text)  # .dtype=int, .shape=(len(text),)
         encoded_reshaped = encoded.reshape((self.n_batches, self.param.batch_size, self.param.seq_length))
         batches = (x.T for x in encoded_reshaped)  # .shape = (n_batches, seq_length, batch_size)
+
+
         return batches
