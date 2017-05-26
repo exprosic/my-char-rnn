@@ -1,0 +1,30 @@
+table {
+    table-layout: fixed;
+    border: 1px solid black;
+}
+
+th, td {
+    font-weight: normal;
+
+    min-width: 1em;
+    min-height: 1em;
+    width: 1em;
+    height: 1em;
+    padding: 0;
+    margin: 1px;
+    border: 1px solid #eeeeee;
+}
+
+thead {
+    position: relative;
+    top: 0;
+    background-color: white;
+}
+
+th.special_char {
+    background-color: #eeeeee;
+}
+
+th[char-selected] {
+    border-color: green;
+}

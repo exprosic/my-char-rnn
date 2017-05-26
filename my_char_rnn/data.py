@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import os
+import sys
 import urllib2
 
 import numpy as np
@@ -37,8 +40,11 @@ class DataLoader(object):
 
         # Load the full text, calculate the vocabulary and the parameters.
 
-        self._full_text = ''.join(cache_data(param).readlines())  # full text in a str
+        print('loading data ...', file=sys.stderr)
+        self._full_text = ''.join(cache_data(param).readlines()).decode('utf8')  # full text in a str
+        print('data loaded.', file=sys.stderr)
 
+        print('preprocessing data ...', file=sys.stderr)
         test_text_length = min(1000, len(self._full_text) // 4)
         self._training_text = self._full_text[:-test_text_length]
         self._test_text = self._full_text[-test_text_length:]
@@ -47,6 +53,7 @@ class DataLoader(object):
         self.r_vocab = {c: i for i, c in enumerate(self.vocab)}  # {'a': 0, 'b': 1, ...}
         self.n_batches = len(self._training_text) // (self.param.batch_size * self.param.seq_length)
         self.vocab_size = len(self.vocab)
+        print('data preprocessed.', file=sys.stderr)
 
     def get_training_batches(self):
         """
@@ -75,8 +82,12 @@ class DataLoader(object):
         """
         assert len(text) == self.n_batches * self.param.batch_size * self.param.seq_length
         encoded = self._encode(text)  # .dtype=int, .shape=(len(text),)
-        encoded_reshaped = encoded.reshape((self.n_batches, self.param.batch_size, self.param.seq_length))
-        batches = (x.T for x in encoded_reshaped)  # .shape = (n_batches, seq_length, batch_size)
+        # encoded_reshaped = encoded.reshape((self.n_batches, self.param.batch_size, self.param.seq_length))
+        # batches = (x.T for x in encoded_reshaped)  # .shape = (n_batches, seq_length, batch_size)
 
+        encoded_reshaped = encoded.reshape((self.param.batch_size, self.n_batches, self.param.seq_length))
+        batches = (encoded_reshaped[:,i,:].T for i in range(self.n_batches))
 
+        # encoded_reshaped = encoded.reshape((self.n_batches * self.param.batch_size, self.param.seq_length))
+        # batches = (encoded_reshaped[i:i+self.param.batch_size,:].T for i in range((self.n_batches-1)*self.param.batch_size + 1))
         return batches

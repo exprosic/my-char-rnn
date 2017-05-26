@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualized sample</title>
+    <link rel="stylesheet" href="visualize.css"/>
+    <script type="application/javascript" src="visualize.js"></script>
+</head>
+<body>
+<p>
+    <span>loading ... </span>
+    <!--<script type="application/javascript" src="saved/sample_data.js"></script>-->
+    <script type="application/javascript">
+//        prevent from caching
+        function loadSample() {
+            let script = document.createElement('script');
+            script.type = 'application/javascript';
+            script.src = 'saved/sample_data.js?' + new Date().getTime().toString();
+            document.body.appendChild(script);
+        }
+
+        loadSample();
+    </script>
+    <span>done.</span>
+</p>
+<table id="sample">
+    <thead>
+    <tr>
+        <!-- Example:
+        <th>w</th>
+        <th>h</th>
+        <th>a</th>
+        <th>t</th>
+        -->
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Example:
+    <tr>
+        <td style="background-color: blue"></td>
+        <td style="background-color: rebeccapurple"></td>
+        <td style="background-color: yellow"></td>
+        <td style="background-color: gray"></td>
+    </tr>
+    <tr>
+        <td style="background-color: rebeccapurple"></td>
+        <td style="background-color: yellow"></td>
+        <td style="background-color: gray"></td>
+        <td style="background-color: blue"></td>
+    </tr>
+    -->
+    </tbody>
+</table>
+</body>
+</html>

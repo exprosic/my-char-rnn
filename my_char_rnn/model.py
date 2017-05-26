@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.rnn import BasicLSTMCell, MultiRNNCell
+from tensorflow.contrib.rnn import BasicLSTMCell, MultiRNNCell, DropoutWrapper
 
 from my_char_rnn.config import ModelParameter
 from my_char_rnn.data import DataLoader
@@ -29,7 +29,15 @@ class RnnModel(object):
         self.softmax_b = tf.get_variable("softmax_b", (data_loader.vocab_size,))
         self.learning_rate = tf.placeholder(tf.float32, ())
 
-        cell = MultiRNNCell([BasicLSTMCell(param.rnn_size) for _ in range(param.n_layers)])
+        basic_cells = [BasicLSTMCell(param.rnn_size) for _ in range(param.n_layers)]
+        cell = MultiRNNCell([DropoutWrapper(
+            x,
+            input_keep_prob=param.input_keep_prob,
+            output_keep_prob=param.output_keep_prob
+        ) for x in basic_cells])
+
+        cell_sample = MultiRNNCell(basic_cells)
+
         state = self.init_state = cell.zero_state(batch_size=param.batch_size, dtype=tf.float32)
         logits = []  # .shape = (seq_length, batch_size, vocab_size)
 
@@ -68,11 +76,13 @@ class RnnModel(object):
         self.sample_input_char = tf.placeholder(tf.int32)  # [0, vocab_size)
         self.sample_target_char = tf.placeholder(tf.int32)  # [0, vocab_size)
         embedded = tf.nn.embedding_lookup(self.embedding, tf.reshape(self.sample_input_char, (1,)))
-        self.sample_init_state = cell.zero_state(batch_size=1, dtype=tf.float32)
+        self.sample_init_state = cell_sample.zero_state(batch_size=1, dtype=tf.float32)
+        self.temperature = tf.placeholder(tf.float32, ())
+
         with tf.variable_scope(self.scope, reuse=True):
-            output, self.sample_final_state = cell(embedded, self.sample_init_state)
+            output, self.sample_final_state = cell_sample(embedded, self.sample_init_state)
             logits = tf.matmul(output, self.softmax_w) + self.softmax_b
-            self.sample_output_probs = tf.nn.softmax(logits[0])
+            self.sample_output_probs = tf.nn.softmax(logits[0]/self.temperature)
             self.sample_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=tf.reshape(self.sample_target_char, shape=(1,)),
                 logits=logits
@@ -103,14 +113,14 @@ class RnnModel(object):
         loss /= len(input_data)
         return loss
 
-    def sample(self, sess, initial_text, data_loader, length):
+    def sample(self, sess, initial_text, data_loader, length, temperature):
         last_state = probs = None
-        result = []
+        # result = []
         for i in range(length):
             c = initial_text[i] if i < len(initial_text) else np.random.choice(data_loader.vocab, p=probs)
-            result.append(c)
-            feed = {self.sample_input_char: data_loader.r_vocab[c]}
+            # result.append(c)
+            feed = {self.sample_input_char: data_loader.r_vocab[c], self.temperature: temperature}
             if last_state:
                 feed.update(RnnModel._state_feed(self.sample_init_state, last_state))
             probs, last_state = sess.run([self.sample_output_probs, self.sample_final_state], feed)
-        return ''.join(result)
+            yield (c, last_state)
