@@ -12,7 +12,7 @@ from my_char_rnn.model import RnnModel
 data_loader = DataLoader(param)
 
 print('creating model ...', file=sys.stderr)
-model = RnnModel(param, data_loader, scope='a_scope_for_weight_reuse')
+model = RnnModel('rnn_model', param, data_loader)
 print('model created.', file=sys.stderr)
 
 

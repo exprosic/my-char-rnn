@@ -38,13 +38,13 @@ _recommended_parameter = ModelParameter(
     saved_session_file_name='saved/model.ckpt',
     saved_sample_file_name='saved/sample_data.js',
 
-    batch_size=50,
-    seq_length=51,
+    batch_size=100,
+    seq_length=101,
     n_layers=2,
     rnn_size=128,
     grad_clip=5.0,
     initial_learning_rate=0.002,
-    decay_rate=0.97,
+    decay_rate=0.95,
 
     input_keep_prob=0.5,
     output_keep_prob=0.5,
