@@ -45,7 +45,7 @@ class DataLoader(object):
         print('data loaded.', file=sys.stderr)
 
         print('preprocessing data ...', file=sys.stderr)
-        test_text_length = min(1000, len(self._full_text) // 4)
+        test_text_length = min(1161, len(self._full_text) // 4)
         self._training_text = self._full_text[:-test_text_length]
         self._test_text = self._full_text[-test_text_length:]
 

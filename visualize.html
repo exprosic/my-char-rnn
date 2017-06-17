@@ -3,26 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>Visualized sample</title>
-    <link rel="stylesheet" href="visualize.css"/>
-    <script type="application/javascript" src="visualize.js"></script>
+    <script type="application/javascript">
+        // prevent from caching
+        function loadJavascript(path) {
+            let script = document.createElement('script');
+            script.type = 'application/javascript';
+            script.src = path + '?' + new Date().getTime().toString();
+            document.write(script.outerHTML);
+        }
+
+        function loadStylesheet(path) {
+            let link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = path + '?' + new Date().getTime().toString();
+            document.write(link.outerHTML);
+        }
+    </script>
+    <script type="application/javascript">loadStylesheet('visualize.css')</script>
+    <script type="application/javascript">loadJavascript('visualize.js')</script>
 </head>
 <body>
 <p>
     <span>loading ... </span>
-    <!--<script type="application/javascript" src="saved/sample_data.js"></script>-->
-    <script type="application/javascript">
-//        prevent from caching
-        function loadSample() {
-            let script = document.createElement('script');
-            script.type = 'application/javascript';
-            script.src = 'saved/sample_data.js?' + new Date().getTime().toString();
-            document.body.appendChild(script);
-        }
-
-        loadSample();
-    </script>
+    <script type="application/javascript">loadJavascript('saved/sample_data.js')</script>
     <span>done.</span>
 </p>
+<button id="sort">Sort</button>
 <table id="sample">
     <thead>
     <tr>

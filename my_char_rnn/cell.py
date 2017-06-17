@@ -2,19 +2,18 @@ from collections import namedtuple
 
 import tensorflow as tf
 
-from .config import ModelParameter
-
-_default_initializer = tf.random_uniform_initializer(-0.08, 0.08)
+from my_char_rnn.config import ModelParameter
+from my_char_rnn.misc import default_initializer
 
 
 class _LinearParam(object):
     def __init__(self, name, input_size, output_size):
         with tf.variable_scope(name):
             self.w = tf.get_variable(
-                "w", shape=(input_size, output_size), dtype=tf.float32, initializer=_default_initializer
+                "w", shape=(input_size, output_size), dtype=tf.float32, initializer=default_initializer
             )
             self.b = tf.get_variable(
-                "b", shape=(output_size,), dtype=tf.float32, initializer=_default_initializer
+                "b", shape=(output_size,), dtype=tf.float32, initializer=default_initializer
             )
 
     def __call__(self, x):
@@ -69,8 +68,10 @@ class MultiLSTMCell(object):
 
     def __init__(self, name, param):
         assert isinstance(param, ModelParameter)
+        self.param = param
         with tf.variable_scope(name):
             self.cells = MultiLSTMCell._State(LSTMCell("lstm_{}".format(i), param) for i in range(param.n_layers))
+            self.dropout_prob = tf.placeholder_with_default(tf.constant(1, tf.float32), (), name="dropout_prob")
 
     def __call__(self, prev_states, input_states):
         """
@@ -85,7 +86,9 @@ class MultiLSTMCell(object):
             new_state = cell(prev, current_input)
             result_states.append(new_state)
             current_input = new_state.h
-        return (current_input, result_states)
+        output = current_input
+        output = tf.nn.dropout(output, self.dropout_prob)
+        return (output, result_states)
 
     def zero_state(self, batch_size):
         return MultiLSTMCell._State(cell.zero_state(batch_size) for cell in self.cells)

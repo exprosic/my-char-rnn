@@ -18,8 +18,7 @@ ModelParameter = namedtuple(
         'initial_learning_rate',
         'decay_rate',
 
-        'input_keep_prob',
-        'output_keep_prob',
+        'dropout_prob',
 
         'schedule_decay_rate',  # decay rate for schedule sampling
     ]
@@ -28,11 +27,13 @@ ModelParameter = namedtuple(
 
 # This recommended parameter is supposed to be copied rather than be imported.
 _recommended_parameter = ModelParameter(
-    data_name = 'shakespeare_1m',
+    data_name = 'war_and_peace_wrapped',
     input_file_urls = {
         'shakespeare_1m': 'https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt',
         'shakespeare_5m': 'https://ocw.mit.edu/ans7870/6/6.006/s08/lecturenotes/files/t8.shakespeare.txt',
         'game_of_throne': '',
+        'war_and_peace': '',
+        'war_and_peace_wrapped': '',
     },
     resource_path = 'resource',
     saved_session_file_name='saved/model.ckpt',
@@ -46,8 +47,7 @@ _recommended_parameter = ModelParameter(
     initial_learning_rate=0.002,
     decay_rate=0.95,
 
-    input_keep_prob=0.5,
-    output_keep_prob=0.5,
+    dropout_prob=0.5,
 
-    schedule_decay_rate=0.9,
+    schedule_decay_rate=1.0,
 )

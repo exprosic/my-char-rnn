@@ -35,7 +35,11 @@ def train():
         n_epoch = 50
         save_and_test_every_n_batches = 50
         sched_threshold = 1.0
+        decay_after_n_epoch = 10
         for i_epoch in range(n_epoch):
+            if i_epoch >= decay_after_n_epoch:
+                the_learning_rate *= param.decay_rate
+
             for i_batch, (input_data, target_data) in enumerate(data_loader.get_training_batches()):
                 loss, last_state = model.train(
                     sess,
@@ -61,8 +65,7 @@ def train():
                     test_loss = model.test(sess, test_input, test_target)
                     print('Test loss: {}'.format(test_loss))
 
-        the_learning_rate *= param.decay_rate
-        sched_threshold *= param.schedule_decay_rate
+            sched_threshold *= param.schedule_decay_rate
 
     print('Training finished.')
 
@@ -72,7 +75,7 @@ def generate(sess=None, file_name=None, save_states=False):
         saver = tf.train.Saver()
         with tf.Session() as sess:
             print('Please input the initial text: ', file=sys.stderr)
-            initial_text = raw_input()
+            initial_text = ''.join(sys.stdin.readlines()).decode('utf8').strip()
             print('Initial text: {}'.format(repr(initial_text)), file=sys.stderr)
             print('generating sample ...', file=sys.stderr)
             saver.restore(sess, param.saved_session_file_name)
@@ -97,7 +100,7 @@ def do_generate(sess, initial_text, temperature = 0.6):
     # return list(zip(*model.sample(sess, initial_text, data_loader, length=1000, temperature=temperature)))
     chars = []
     states = []
-    for (char, state) in model.sample(sess, initial_text, data_loader, length=100, temperature=temperature):
+    for (char, state) in model.sample(sess, initial_text, data_loader, length=200, temperature=temperature):
         chars.append(char)
         states.append(state)
     return chars, states

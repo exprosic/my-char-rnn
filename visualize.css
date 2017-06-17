@@ -21,10 +21,14 @@ thead {
     background-color: white;
 }
 
-th.special_char {
+thead.sorting {
+    background-color: gray;
+}
+
+th.special-char {
     background-color: #eeeeee;
 }
 
-th[char-selected] {
+th.char-selected {
     border-color: green;
 }

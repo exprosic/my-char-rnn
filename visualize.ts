@@ -53,7 +53,7 @@ window.onload = () => {
             x.textContent = repr(sample_chars[i]);
             x.setAttribute('data-index', i.toString());
             if ('\n\t'.indexOf(sample_chars[i]) >= 0)
-                x.classList.add('special_char');
+                x.classList.add('special-char');
             sampleHead.appendChild(x);
         }
 
@@ -78,7 +78,8 @@ window.onload = () => {
                     row.setAttribute('data-ch', ch);
                     row.setAttribute('data-layer', i.toString());
                     row.setAttribute('data-state-index', j.toString());
-                    row.setAttribute('data-variance', calcVariance(vals).toString());
+                    row.setAttribute('data-absdiff', calcAbsDiff(vals).toString());
+                    row.setAttribute('data-signchanges', calcSignChanges(vals).toString());
                     sampleBody.appendChild(row);
                 }
             }
@@ -93,54 +94,70 @@ window.onload = () => {
     }
 
     function setupSelection(): void {
+        let timerId = null;
+
         const selectListener = (ev) => {
             console.log('selecting...');
             const th = ev.currentTarget as HTMLTableHeaderCellElement;
-            if (!th.hasAttribute('char-selected')) {
-                th.setAttribute('char-selected', "");
-            } else {
-                th.removeAttribute('char-selected');
-            }
+            th.classList.toggle('char-selected');
             console.log('selected.');
 
-            sortStates();
+            // if (timerId)
+            //     clearTimeout(timerId);
+            // timerId = setTimeout(
+            //     () => {
+            //         sampleHead.classList.add('sorting');
+            //         setTimeout(
+            //             () => {
+            //                 sortStates();
+            //                 sampleHead.classList.remove('sorting');
+            //             },
+            //             50);
+            //     },
+            //     1000
+            // );
         };
         const ths = document.querySelectorAll('th');
-        for (let i=0; i<ths.length; ++i)
+        for (let i = 0; i < ths.length; ++i)
             ths[i].onclick = selectListener;
+    }
 
-        const variances: Array<number> = [];
 
-        function sortStates(): void {
-            console.log('sorting...');
-            const ths = sampleHead.querySelectorAll('th[char-selected]');
-            let selected: Array<number> = [];
-            for (let i=0; i<ths.length; ++i)
-                selected.push(parseInt(ths[i].getAttribute('data-index')));
+    function sortStates(): void {
+        console.log('sorting...');
+        const ths = sampleHead.querySelectorAll('th.char-selected');
+        let selected: Array<number> = [];
+        for (let i=0; i<ths.length; ++i)
+            selected.push(parseInt(ths[i].getAttribute('data-index')));
 
-            const sortdata: Array<{key: number, row: HTMLTableRowElement}> = [];
-            const rows = document.querySelectorAll('tbody>tr');
-            for (let i=0; i<rows.length; ++i) {
-                const row = rows[i] as HTMLTableRowElement;
-                const ch = row.getAttribute('data-ch') as ('c'|'h');
-                const layer = parseInt(row.getAttribute('data-layer'));
-                const stateIdx = parseInt(row.getAttribute('data-state-index'));
-                const selvals: Array<number> = [];
-                for (let j of selected)
-                    selvals.push(sample_states[j][layer][ch][stateIdx]);
-                const variance = parseFloat(row.getAttribute('data-variance'));
-                const selvariance = calcVariance(selvals);
-                const key = selvariance / (variance+1e-3);
-                sortdata.push({key: key, row: row});
-            }
+        const sortdata: Array<{key: any, row: HTMLTableRowElement}> = [];
+        const rows = document.querySelectorAll('tbody>tr');
+        for (let i=0; i<rows.length; ++i) {
+            const row = rows[i] as HTMLTableRowElement;
+            const ch = row.getAttribute('data-ch') as ('c'|'h');
+            const layer = parseInt(row.getAttribute('data-layer'));
+            const stateIdx = parseInt(row.getAttribute('data-state-index'));
+            const selvals: Array<number> = [];
+            for (let j of selected)
+                selvals.push(sample_states[j][layer][ch][stateIdx]);
+            // const variance = parseFloat(row.getAttribute('data-absdiff'));
+            // const selvariance = calcVariance(selvals);
+            // const key = selvariance / (variance+1e-3);
 
-            sortdata.sort((a,b) => a.key-b.key);
-            while (sampleBody.lastChild)
-                sampleBody.removeChild(sampleBody.lastChild);
-            for (let x of sortdata)
-                sampleBody.appendChild(x.row);
-            console.log('sorted.');
+            // const absDiff = parseFloat(row.getAttribute('data-absdiff'));
+            // const selAbsDiff = calcAbsDiff(selvals);
+            // const key = selAbsDiff / (absDiff + 1e-3);
+
+            const key = parseFloat(row.getAttribute('data-signchanges'));
+            sortdata.push({key: key, row: row});
         }
+
+        sortdata.sort((a,b) => a.key - b.key);
+        while (sampleBody.lastChild)
+            sampleBody.removeChild(sampleBody.lastChild);
+        for (let x of sortdata)
+            sampleBody.appendChild(x.row);
+        console.log('sorted.');
     }
 
     function indexed<T>(a: Array<T>, idx: Array<number>): Array<T> {
@@ -166,8 +183,27 @@ window.onload = () => {
             sumsq += (ai-m) * (ai-m);
         return sumsq/len;
     }
+    
+    function calcAbsDiff(a: Array<number>): number {
+        let sum = 0;
+        for (let i=1; i<a.length; ++i)
+            sum += Math.abs(a[i-1]-a[i]) ** 2;
+        return sum;
+    }
+
+    function calcSignChanges(a: Array<number>): number {
+        let cnt = 0;
+        for (let i=2; i<a.length; ++i)
+            if ((a[i-2]-a[i-1])*(a[i-1]-a[i]) < 0)
+                cnt += 1;
+        return cnt;
+    }
 
     renderSample();
     setupScroll();
     setupSelection();
+
+    (document.querySelector('#sort') as HTMLButtonElement).onclick = () => {
+        sortStates();
+    }
 };
